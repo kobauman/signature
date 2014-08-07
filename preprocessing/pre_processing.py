@@ -4,12 +4,32 @@ import json
 
 from getKey import getKey
 
+'''
+1) Divide reviews to sentences and make POS (part of speech) tagging
+Script: pre_processing.py
+Input: 
+   * yelp_training_set_business.json
+   * yelp_training_set_user.json
+   * yelp_training_set_review.json
+   * Category list
+
+Details: 
+sentenceID = reviewNumber*10000 + sentenceNumber
+import TextBlob
+
+Output: Build a text file with sentences and POS for each category
+Output format: sentenceID word/lemma (if lemma!=word)/POS É
+'''
+
+
+
 train_data_path = "../../data/splitting_reviews/"
 
 restKeys = ['American (New)','Mexican','American (Traditional)',
             'Pizza','Italian','Breakfast & Brunch','Sandwiches',
             'Burgers','Sushi Bars','Chinese','Steakhouses',
             'Japanese','Mediterranean','Asian Fusion','Thai','Seafood']
+
 
 def processSentence(sentence):
     result_list = list()

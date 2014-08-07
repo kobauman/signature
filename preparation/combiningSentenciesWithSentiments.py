@@ -1,12 +1,7 @@
 import json
 import re, glob
 
-#5) Combine all data together
-#Input: sentenceID part_start part_end feature sentiment ([-1,0,1])
-#Output: review -> {setence_num:{featureID:sentiment,..}, É}
-
-#TODO combine data
-
+#Combine sentencies with sentiments
 
 path  = '../../data/'
 
