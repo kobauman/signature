@@ -8,45 +8,29 @@ from sklearn import tree
 from sklearn.externals.six import StringIO
 #from sklearn.cross_validation import KFold
 from sklearn import cross_validation
-from sklearn.metrics import recall_score
+from sklearn import svm
 
 from utils.featuresStructure import featureStructureWorker
 
 def crossValidation(logger, X, Y):
-    for criterion in ['entropy', 'gini']:
-        for max_depth in range(8,50,5):
-            #for max_leaf_nodes in range()
-            clf = tree.DecisionTreeClassifier(max_depth=max_depth,criterion=criterion)
-            scores_p = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='precision')
-            scores_r = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='recall')
-            logger.info('%s (%d): Precision: %0.2f (+/- %0.2f) recall: %0.2f (+/- %0.2f)'%(criterion,
-                                                                                           max_depth,
-                                                                                           scores_p.mean(),
-                                                                                           scores_p.std() * 2,
-                                                                                           scores_r.mean(),
-                                                                                           scores_r.std() * 2))
-        clf = tree.DecisionTreeClassifier(criterion=criterion)
-        scores_p = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='precision')
-        scores_r = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='recall')
-        logger.info('%s: Precision: %0.2f (+/- %0.2f) recall: %0.2f (+/- %0.2f)'%(criterion,
-                                                                                       scores_p.mean(),
-                                                                                       scores_p.std() * 2,
-                                                                                       scores_r.mean(),
-                                                                                       scores_r.std() * 2))
-        #logger.info('Accuracy with entropy (3): %0.2f (+/- %0.2f)'%(scores.mean(), scores.std() * 2))
-        
-#        clf = tree.DecisionTreeClassifier(max_depth=4,criterion='entropy')
-#        scores = cross_validation.cross_val_score(clf, X, Y, cv=10)
-#        logger.info('Accuracy with entropy (4): %0.2f (+/- %0.2f)'%(scores.mean(), scores.std() * 2))
-#        
-#        
-#        clf = tree.DecisionTreeClassifier(max_depth=3,criterion='gini')
-#        scores = cross_validation.cross_val_score(clf, X, Y, cv=10)
-#        logger.info('Accuracy with gini(3): %0.2f (+/- %0.2f)'%(scores.mean(), scores.std() * 2))
-#        
-#        clf = tree.DecisionTreeClassifier(max_depth=4,criterion='gini')
-#        scores = cross_validation.cross_val_score(clf, X, Y, cv=10)
-#        logger.info('Accuracy with gini(4): %0.2f (+/- %0.2f)'%(scores.mean(), scores.std() * 2))
+
+    clf = tree.DecisionTreeClassifier(criterion='entropy')
+    scores_p = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='precision')
+    scores_r = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='recall')
+    logger.info('DecisionTree: Precision: %0.2f (+/- %0.2f) recall: %0.2f (+/- %0.2f)'%(scores_p.mean(),
+                                                                                        scores_p.std() * 2,
+                                                                                        scores_r.mean(),
+                                                                                        scores_r.std() * 2))
+    
+    clf = svm.SVC()
+    scores_p = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='precision')
+    scores_r = cross_validation.cross_val_score(clf, X, Y, cv=10, scoring='recall')
+    logger.info('SVM: Precision: %0.2f (+/- %0.2f) recall: %0.2f (+/- %0.2f)'%(scores_p.mean(),
+                                                                                        scores_p.std() * 2,
+                                                                                        scores_r.mean(),
+                                                                                        scores_r.std() * 2))
+
+    
 
 def learnFeatureExistance(busImportantFeatures, userImportantFeatures, trainReviews):
     logger = logging.getLogger('signature.lFE.learnFE')
