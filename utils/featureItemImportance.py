@@ -3,6 +3,7 @@ import logging
 import sys
 import math
 import copy
+import numpy as np
 sys.path.append('../')
 
 from utils.featuresStructure import featureStructureWorker
@@ -16,33 +17,69 @@ return
 '''
 
 
-def featureImportance(review_dict):
-    logger = logging.getLogger('signature.fI')
+def featureImportance(review_dict, ignore_neutral = True):
+    logger = logging.getLogger('signature.IFI.fI')
     logger.info('starting featureImportance')
     fsw = featureStructureWorker()
     N = len(review_dict)
-    featuresDF = dict()
-    #itemTemplate = {'tfidfDict':{},'featureFreq':{},'reviewsNumber':0}
-    itemFeatures = dict()
-    for item in review_dict:
-        itemFeatures[item] = {'tfidfDict':{},'featureFreq':{},'reviewsNumber':0, 'maxFreq':0}
+    featuresDF = dict() # dictionary for counting Document Frequency
+    itemFeatures = dict() # main dictionary with statistics (item:stat)
+    for it, item in enumerate(review_dict):
+        itemFeatures[item] = {'tfidfDict':{},'featureFreq':{},'sentiment':{},'reviewsNumber':0, 'maxFreq':0, 'textFeatures':[]}
         itemFeatures[item]['reviewsNumber'] = len(review_dict[item])
-        for review in review_dict[item]:
-            reviewFeatures = fsw.getReviewFeatures(review)
+        for r, review in enumerate(review_dict[item]):
+            reviewFeatures = fsw.getReviewFeaturesExistence(review['features'])
             for feature in reviewFeatures:
+                #work with frequency
                 itemFeatures[item]['featureFreq'][feature] = itemFeatures[item]['featureFreq'].get(feature,0)
                 itemFeatures[item]['featureFreq'][feature] += 1
+                #work with sentiment
+                itemFeatures[item]['sentiment'][feature] = itemFeatures[item]['sentiment'].get(feature,[])
+                if len(reviewFeatures[feature]):
+                    if ignore_neutral:
+                        itemFeatures[item]['sentiment'][feature].append(np.average([x for x in reviewFeatures[feature] if x]))
+                    else:
+                        itemFeatures[item]['sentiment'][feature].append(np.average(reviewFeatures[feature]))
+                else:
+                    itemFeatures[item]['sentiment'][feature].append(0.0)
+            
+            
+            #print review.keys()
+            if not len(itemFeatures[item]['textFeatures']):
+                for tf in review['textFeatures']:
+                    itemFeatures[item]['textFeatures'].append(tf)
+            else:
+                for i,tf in enumerate(review['textFeatures']):
+                    itemFeatures[item]['textFeatures'][i] += tf
+            
+#            if not r%10:
+#                logger.debug('%d reviews'%r)
+            
+                    
         for feature in itemFeatures[item]['featureFreq']:
+            #work with frequency
             if itemFeatures[item]['featureFreq'][feature] > itemFeatures[item]['maxFreq']:
                 itemFeatures[item]['maxFreq'] = itemFeatures[item]['featureFreq'][feature]
+            #work with sentiment
+            itemFeatures[item]['sentiment'][feature] = [round(np.average(itemFeatures[item]['sentiment'][feature]),3),
+                                     len(itemFeatures[item]['sentiment'][feature])]
+            #work with 'Document' Frequency (DF)
             featuresDF[feature] = featuresDF.get(feature, 0)
             featuresDF[feature] += 1
         
+        for tf in range(len(itemFeatures[item]['textFeatures'])):
+            itemFeatures[item]['textFeatures'][tf] /= itemFeatures[item]['reviewsNumber']
+        
+        if not it%1000:
+            logger.debug('%d items'%it)
+            
     #prepare IDF
     for feature in featuresDF:
         featuresDF[feature] = math.log(float(N)/featuresDF[feature])
     
-    for item in itemFeatures:
+    logger.debug('IDF prepared for %d items'%it)
+    
+    for it, item in enumerate(itemFeatures):
         for feature in itemFeatures[item]['featureFreq']:
             tf = float(itemFeatures[item]['featureFreq'][feature])/itemFeatures[item]['maxFreq']
             #print feature, tf
@@ -62,5 +99,7 @@ def featureImportance(review_dict):
                                            for feature in itemFeatures[item]['featureFreq']]
         
         itemFeatures[item]['featureFreqList'].sort(reverse = True)
-    
+        
+        if not it%1000:
+            logger.debug('%d items completed'%it)
     return copy.deepcopy(itemFeatures)

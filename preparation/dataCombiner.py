@@ -1,7 +1,8 @@
 import json
 import re, glob
 import logging
-
+import math
+from textblob import TextBlob
 '''
 5) Combine all data together
 Input: sentenceID part_start part_end feature sentiment ([-1,0,1])
@@ -14,6 +15,35 @@ def Filenames(directory):
     if not directory.endswith("/"):
             directory+="/"
     return glob.glob(directory+"*")
+
+
+def divide(a,b):
+    try:
+        #suppose that number2 is a float
+        return round(float(a)/float(b),3)
+    except ZeroDivisionError:
+        return -10.0
+
+def getReviewStat(text):
+    features_list = list()
+    textB = TextBlob(text)
+    #'logLen(%d)'
+    features_list.append(math.log(len(textB.sentences)+1))
+    #'logLenWords(%d)'
+    features_list.append(math.log(len(textB.words)+1))
+    
+    VBDsum = sum([1 for tag in textB.tags if tag[1] == 'VBD'])
+    Vsum = sum([1 for tag in textB.tags if tag[1].startswith('VB')])
+    #'logVBDsum(%d)'
+    features_list.append(math.log((VBDsum+1),2))
+    #'logVsum(%d)'
+    features_list.append(math.log((Vsum+1),2))
+    ratio = divide(VBDsum*10,Vsum)
+    #'intVBD/Vsum(%d)'
+    features_list.append(ratio)
+    return features_list
+
+
 
 def getFeatures(path):
     logger = logging.getLogger('signature.gF')
@@ -63,7 +93,9 @@ def preProcessReviews(review_features, outfilename, limit = 100):
         if counter in review_features:
             review['features'] = review_features[counter].copy()
             review['ID'] = counter
+            textFeatures = getReviewStat(review['text'])
             del review['text']
+            review['textFeatures'] = textFeatures
             out_file.write(json.dumps(review).encode('utf8', 'ignore')+'\n')
         if not counter %10000:
             logger.info('%d reviews processed'%counter)

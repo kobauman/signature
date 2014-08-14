@@ -3,12 +3,12 @@ sys.path.append('../')
 import logging
 import time
 
-from featureWorkers.importantFeaturesIdentification import importantFeatureIdentification
+from standartAlgorithms.learnMatrixFactorization import learnMF
 
 if __name__ == '__main__':
     logger = logging.getLogger('signature')
 
-    logfile = '../../data/log/%d_importantFeaturesIdentification.log'%int(time.time())
+    logfile = '../../data/log/%d_learnSMF.log'%int(time.time())
     logging.basicConfig(filename = logfile, format='%(asctime)s : %(name)-12s: %(levelname)s : %(message)s')
     logging.root.setLevel(level=logging.DEBUG)
     logger.info("running %s" % ' '.join(sys.argv))
@@ -23,8 +23,4 @@ if __name__ == '__main__':
     
 
     path = '../../data/restaurants'
-    importantFeatureIdentification(path+'/yelp_reviews_features_train.json',
-                                   path+'/businessFeaturesAggregation_train.json',
-                                   path+'/userFeaturesAggregation_train.json',
-                                   True,True,1000000000)
-    
+    learnMF(path)

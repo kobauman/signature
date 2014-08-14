@@ -1,12 +1,10 @@
 import json
-import re, glob
 import sys
 sys.path.append('../')
 import logging
 
-from utils.featuresStructure import featureStructureWorker
 from utils.featureItemImportance import featureImportance
-from utils.featureAggregation import featureAggregation
+
 
 '''
 7) Obtaining a set of important features (G_{r_i}) with weights for each Restaurant r_i
@@ -29,7 +27,9 @@ restaurantID -> set of features G_{r_i} = (HF_{r_i} and F_{r_i})
 
 '''
 
-def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busInfo = False, userInfo = False):
+
+
+def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busInfo = False, userInfo = False, limit = 100000000):
     logger = logging.getLogger('signature.IFI')
     logger.info('starting importantFeatureIdentification from %s'%infileName)
     
@@ -60,10 +60,10 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
     #load reviews
     review_file = open(infileName,"r")
     for counter, line in enumerate(review_file):
-        if not counter%1000:
+        if not counter%10000:
             logger.debug('%d reviews loaded'%counter)
-#        if counter > 10000:
-#            break
+        if counter > limit:
+            break
         # load review information
         review = json.loads(line)
         businessID = review['business_id']
@@ -72,11 +72,11 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
         # fill up dictionaries of reviews
         if businessID in business_dict:
             bus_reviews[businessID] = bus_reviews.get(businessID,[])
-            bus_reviews[businessID].append(review['features'])
+            bus_reviews[businessID].append(review)
             
         if userID in user_dict:
             user_reviews[userID] = user_reviews.get(userID,[])
-            user_reviews[userID].append(review['features'])    
+            user_reviews[userID].append(review)    
     review_file.close()
     
     logger.info('Important feature identification for %d BUSINESSES'%len(bus_reviews))
@@ -86,32 +86,34 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
         busImportantFeatures[bus]['name'] = business_dict[bus]['name']
         busImportantFeatures[bus]['stars'] = business_dict[bus]['stars']
         
-    if busInfo:
-        out_file = open(outBusinesFile,"w")
-        out_file.write(json.dumps(busImportantFeatures).encode('utf8', 'ignore'))
-        out_file.close()
+    
+    out_file = open(outBusinesFile,"w")
+    out_file.write(json.dumps(busImportantFeatures).encode('utf8', 'ignore'))
+    out_file.close()
         
+    if busInfo:   
         out_file = open(outBusinesFile.replace('.json','.txt'),"w")
-        for bus in busImportantFeatures:
+        for b, bus in enumerate(busImportantFeatures):
             out_file.write('%s\t%s\nstars = %s\n'%(busImportantFeatures[bus]['name'].encode('utf8', 'ignore'),
                                                  str(busImportantFeatures[bus]['categories']).encode('utf8', 'ignore'),
                                                  str(busImportantFeatures[bus]['stars']).encode('utf8', 'ignore')))
             out_file.write('%20sFeatures\tTFIDF\tFreq\tSentiment\n'%'')
-            fA = featureAggregation(bus_reviews[bus])
             featuresInfo = list()
             for feature in busImportantFeatures[bus]['tfidfDict']:
-                if feature in busImportantFeatures[bus]['featureFreq'] and feature in fA:
+                if feature in busImportantFeatures[bus]['featureFreq']:
                     featuresInfo.append([busImportantFeatures[bus]['tfidfDict'][feature],
                                          '%30s\t%s\t%s\t%s\n'%(feature,
                                                              str(busImportantFeatures[bus]['tfidfDict'][feature]),
                                                              str(busImportantFeatures[bus]['featureFreq'][feature]),
-                                                             str(fA[feature]))])
+                                                             str(busImportantFeatures[bus]['sentiment'][feature]))])
             
             
             featuresInfo.sort(reverse=True)
             out_file.write(''.join([x[1] for x in featuresInfo]))           
             out_file.write('======================================================\n\n')                         
             
+            if not b%1000:
+                logger.debug('%d business summaries completed'%b)
         out_file.close()
     
     
@@ -122,31 +124,33 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
         userImportantFeatures[user]['name'] = user_dict[user]['name']
         userImportantFeatures[user]['stars'] = user_dict[user]['average_stars']
         
-    if userInfo:
-        out_file = open(outUserFile,"w")
-        out_file.write(json.dumps(userImportantFeatures).encode('utf8', 'ignore'))
-        out_file.close()
+    
+    out_file = open(outUserFile,"w")
+    out_file.write(json.dumps(userImportantFeatures).encode('utf8', 'ignore'))
+    out_file.close()
         
+    if userInfo:   
         out_file = open(outUserFile.replace('.json','.txt'),"w")
-        for user in userImportantFeatures:
+        for u, user in enumerate(userImportantFeatures):
             out_file.write('%s\nstars = %s\n'%(userImportantFeatures[user]['name'].encode('utf8', 'ignore'),
                                                  str(userImportantFeatures[user]['stars']).encode('utf8', 'ignore')))
             out_file.write('%20sFeatures\tTFIDF\tFreq\tSentiment\n'%'')
-            fA = featureAggregation(user_reviews[user])
             featuresInfo = list()
             for feature in userImportantFeatures[user]['tfidfDict']:
-                if feature in userImportantFeatures[user]['featureFreq'] and feature in fA:
+                if feature in userImportantFeatures[user]['featureFreq']:
                     featuresInfo.append([userImportantFeatures[user]['tfidfDict'][feature],
                                          '%30s\t%s\t%s\t%s\n'%(feature,
                                                              str(userImportantFeatures[user]['tfidfDict'][feature]),
                                                              str(userImportantFeatures[user]['featureFreq'][feature]),
-                                                             str(fA[feature]))])
+                                                             str(userImportantFeatures[user]['sentiment'][feature]))])
             
             
             featuresInfo.sort(reverse=True)
             out_file.write(''.join([x[1] for x in featuresInfo]))           
             out_file.write('======================================================\n\n')                         
             
+            if not u%1000:
+                logger.debug('%d user summaries completed'%u)
         out_file.close()
         
     logger.info('DONE')

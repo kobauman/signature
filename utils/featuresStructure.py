@@ -8,6 +8,7 @@ class featureStructureWorker:
     def __init__(self):
         self.feature_parents = dict()
         
+        self.feature_parents['FOOD'] = []
         self.feature_parents['FOOD_FOOD'] = ['FOOD']
         self.feature_parents['FOOD_FOOD_SAUCE'] = ['FOOD_FOOD','FOOD']
         self.feature_parents['FOOD_FOOD_MEAT'] = ['FOOD_FOOD','FOOD']
@@ -80,6 +81,7 @@ class featureStructureWorker:
         
         self.featureIdicator = dict()
         
+        self.featureIdicator['FOOD'] = True
         self.featureIdicator['FOOD_FOOD'] = True
         self.featureIdicator['FOOD_FOOD_SAUCE'] = True
         self.featureIdicator['FOOD_FOOD_MEAT'] = True
@@ -146,38 +148,32 @@ class featureStructureWorker:
         self.featureIdicator['GENERAL'] = True
         
     
-#    def getFeatureAverage(self, review_features):
-#        result = dict()
-#        for sentence in review_features:
-#            for feature in review_features[sentence]:
-#                result[feature] = result.get(feature,[])
-#                sentiment = int(review_features[sentence][feature])
-#                if sentiment:
-#                    result[feature].append(sentiment)
-#                    if feature in self.feature_parents:
-#                        for parent in self.feature_parents[feature]:
-#                            result[parent] = result.get(parent,[])
-#                            result[parent].append(sentiment)
-#        
-#        return {r:result[r] for r in result if len(result[r])>0}
-#        
-        #return result
-    
-    def getReviewFeatures(self, review_features):
+    def getReviewFeaturesExistence(self, review_features):
         result = dict()
         for sentence in review_features:
             for feature in review_features[sentence]:
-                result[feature] = result.get(feature,[])
+                features_path = [feature]
+                if feature in self.feature_parents:
+                    features_path += self.feature_parents[feature]
+                
                 sentiment = int(review_features[sentence][feature])
-                if sentiment:
-                    if feature in self.featureIdicator:
-                        result[feature].append(sentiment)
-                    if feature in self.feature_parents:
-                        for parent in self.feature_parents[feature]:
-                            result[parent] = result.get(parent,[])
-                            result[parent].append(sentiment)
+                for f in features_path:
+                    if f not in self.featureIdicator:
+                        continue
+                    if not self.featureIdicator[f]:
+                        continue
+                    result[f] = result.get(f,[])
+                
+                    if sentiment:
+                        result[f].append(sentiment)  
+        return result
+    
+    def getReviewFeaturesSentiment(self, review_features):
+        result = self.getReviewFeaturesExistence(review_features)
         
         return {r:result[r] for r in result if len(result[r])>0}
+    
+    
             
 if __name__ == '__main__':
     program = os.path.basename(sys.argv[0])

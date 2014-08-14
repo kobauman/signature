@@ -5,6 +5,8 @@ sys.path.append('../')
 
 from utils.featuresStructure import featureStructureWorker
 
+#!!!NOT USED!!!
+
 '''
 get set of reviews with assigned features
 return 

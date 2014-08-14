@@ -23,4 +23,4 @@ if __name__ == '__main__':
     
 
     path = '../../data/restaurants'
-    learnFE(path)
+    learnFE(path, 3000)
