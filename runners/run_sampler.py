@@ -23,4 +23,4 @@ if __name__ == '__main__':
     
 
     path = '../../data/restaurants/'
-    sampler(path+'/yelp_reviews_features.json', 0.8)
+    sampler(path+'/yelp_reviews_features.json', 0.1)

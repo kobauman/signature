@@ -70,21 +70,26 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
         userID = review['user_id']
         
         # fill up dictionaries of reviews
-        if businessID in business_dict:
-            bus_reviews[businessID] = bus_reviews.get(businessID,[])
-            bus_reviews[businessID].append(review)
-            
-        if userID in user_dict:
-            user_reviews[userID] = user_reviews.get(userID,[])
-            user_reviews[userID].append(review)    
+        #if businessID in business_dict:
+        bus_reviews[businessID] = bus_reviews.get(businessID,[])
+        bus_reviews[businessID].append(review)
+        
+        #if userID in user_dict:
+        user_reviews[userID] = user_reviews.get(userID,[])
+        user_reviews[userID].append(review)    
     review_file.close()
     
     logger.info('Important feature identification for %d BUSINESSES'%len(bus_reviews))
     busImportantFeatures = featureImportance(bus_reviews)
     for bus in busImportantFeatures:
-        busImportantFeatures[bus]['categories'] = business_dict[bus]['categories']
-        busImportantFeatures[bus]['name'] = business_dict[bus]['name']
-        busImportantFeatures[bus]['stars'] = business_dict[bus]['stars']
+        if bus in business_dict:
+            busImportantFeatures[bus]['categories'] = business_dict[bus]['categories']
+            busImportantFeatures[bus]['name'] = business_dict[bus]['name']
+            busImportantFeatures[bus]['stars'] = business_dict[bus]['stars']
+        else:
+            busImportantFeatures[bus]['categories'] = None
+            busImportantFeatures[bus]['name'] = None
+            busImportantFeatures[bus]['stars'] = None
         
     
     out_file = open(outBusinesFile,"w")
@@ -121,8 +126,12 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
     logger.info('Important feature identification for %d USERS'%len(user_reviews))
     userImportantFeatures = featureImportance(user_reviews)
     for user in userImportantFeatures:
-        userImportantFeatures[user]['name'] = user_dict[user]['name']
-        userImportantFeatures[user]['stars'] = user_dict[user]['average_stars']
+        if user in user_dict:
+            userImportantFeatures[user]['name'] = user_dict[user]['name']
+            userImportantFeatures[user]['stars'] = user_dict[user]['average_stars']
+        else:
+            userImportantFeatures[user]['name'] = None
+            userImportantFeatures[user]['stars'] = None
         
     
     out_file = open(outUserFile,"w")
@@ -132,8 +141,11 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
     if userInfo:   
         out_file = open(outUserFile.replace('.json','.txt'),"w")
         for u, user in enumerate(userImportantFeatures):
-            out_file.write('%s\nstars = %s\n'%(userImportantFeatures[user]['name'].encode('utf8', 'ignore'),
+            try:
+                out_file.write('%s\nstars = %s\n'%(str(userImportantFeatures[user]['name']).encode('utf8', 'ignore'),
                                                  str(userImportantFeatures[user]['stars']).encode('utf8', 'ignore')))
+            except:
+                pass
             out_file.write('%20sFeatures\tTFIDF\tFreq\tSentiment\n'%'')
             featuresInfo = list()
             for feature in userImportantFeatures[user]['tfidfDict']:

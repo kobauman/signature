@@ -21,7 +21,7 @@ from sklearn.grid_search import GridSearchCV
 #from sklearn.decomposition import PCA
 
 from utils.featuresStructure import featureStructureWorker
-
+from getFeatures import getFeatures
 
 def getBestModel(logger, X, Y):
     weights = [{0:1, 1:x} for x in np.logspace(-1.1, 1.1, 20)]
@@ -31,6 +31,29 @@ def getBestModel(logger, X, Y):
     clf = clf.fit(X, Y)
     logger.info('f1: %.4f with %s'%(clf.best_score_,str(clf.best_estimator_.class_weight)))
     return clf.best_score_, linear_model.LogisticRegression(C=1e5, class_weight=clf.best_estimator_.class_weight).fit(X, Y)
+
+def getBestLogModel(logger, feature, trainX, trainY, testX, testY, X, Y, path):
+    logmodel = linear_model.LogisticRegression(C=1e5, class_weight='auto').fit(trainX, trainY)
+    Ypred = [x[1] for x in logmodel.predict_proba(testX)]
+    
+    prec, rec, thresholds = precision_recall_curve(testY, Ypred)
+    bestF1 = 0.0
+    bestThres = 0.0
+    
+    for i, thres in enumerate(thresholds[:-1]):
+        F1 = 2*prec[i]*rec[i]/(prec[i]+rec[i])
+        #print F1, prec[i], rec[i]
+        if F1 > bestF1:
+            bestF1 = F1
+            bestThres = thres
+    #print '=============='
+    logger.info('Best score on LR with thres = %.3f is equal: %.3f'%(bestThres,bestF1))
+    drawPR(feature,testY,Ypred,bestThres,bestF1, path, 'LR')
+    
+    X = np.array(X)
+    Y = np.array(Y)
+    logmodel = linear_model.LogisticRegression(C=1e5, class_weight='auto').fit(X, Y)
+    return bestThres,bestF1,logmodel
 
 def crossValidation(logger, X, Y):
     #!!!PCA
@@ -94,42 +117,25 @@ def crossValidation(logger, X, Y):
 #clf = AdaBoostClassifier(n_estimators=100)
     
 
-def getFeatures(feature, ID, dictionary):
-    if ID in dictionary:
-        tfidf = dictionary[ID]['tfidfDict'].get(feature,0.0)
-        freq = int(dictionary[ID]['featureFreq'].get(feature,0.0)*dictionary[ID]['reviewsNumber']/100)
-        pfreq = dictionary[ID]['featureFreq'].get(feature,0.0)
-        sent = dictionary[ID]['sentiment'].get(feature,[0.0,0])[0]
-        reviewNum = dictionary[ID]['reviewsNumber']
-        maxFreq = dictionary[ID]['maxFreq']
-        featureNum = len(dictionary[ID]['tfidfDict'])
-        textFeatures = dictionary[ID]['textFeatures']
-        return [tfidf,freq,pfreq,sent,reviewNum,maxFreq,featureNum] + textFeatures
-    else:
-        return [0.0,0,0.0,0.0,0,0,0] + [0.0,0.0,0.0,0.0,0.0]
+
         
 
-def drawPR(feature,y_true,y_pred,Yt,Ypred,path):
-    precision_mf, recall_mf, thresholds_mf = precision_recall_curve(y_true, y_pred)
-    precision, recall, thresholds = precision_recall_curve(Yt, Ypred)
-    
+def drawPR(feature,y_true,y_pred, thres,F1, path, name = ''):
+    # get (precision, recall)
+    precision, recall, thresholds = precision_recall_curve(y_true, y_pred)
     
     # Create plots with pre-defined labels.
     # Alternatively, you can pass labels explicitly when calling `legend`.
-    fig, (ax0, ax1) = plt.subplots(nrows=2)
-    ax0.set_title('%s first prediction'%feature)
-    ax0.plot(thresholds_mf, precision_mf[:-1], 'k--', color = 'green', label='precision_mf')
-    ax0.plot(thresholds_mf, recall_mf[:-1], 'k:', color = 'green', label='recall_mf')
-    ax0.legend(shadow=True)
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_title('%s, Thres = %.3f, F1 = %.3f'%(feature,thres,F1))
+    ax.plot(thresholds, precision[:-1], 'k--', color = 'green', label='precision_mf')
+    ax.plot(thresholds, recall[:-1], 'k:', color = 'green', label='recall_mf')
+    ax.plot([thres,thres], [0, 1], "-", color = 'red')
+    ax.plot([0,1], [F1, F1], "-", color = 'red')
+    ax.legend(shadow=True)
     
-    
-    ax1.set_title('%s second prediction'%feature)
-    ax1.plot(thresholds, precision[:-1], 'k--', color = 'red', label='precision')
-    ax1.plot(thresholds, recall[:-1], 'k:', color = 'red', label='recall')
-    ax1.legend(shadow=True)
-    
-    #plt.show()
-    plt.savefig(path+'/modelPictures/%s_pr.png'%feature)
+    plt.savefig(path+'/modelPictures/%s_pr_%s.png'%(feature,name))
     
     
 
@@ -138,101 +144,33 @@ def learnFeatureExistance(busImportantFeatures, userImportantFeatures, trainRevi
     logger.info('starting learnFeatureExistance from %d reviews'%len(trainReviews))
     fsw = featureStructureWorker()
     modelDict = dict()
+    trainAveragesDict = dict()
+    
     for i, feature in enumerate(fsw.featureIdicator):
-#        if feature.count('_')>1:
-#            continue
-        logger.debug('Start working with %s'%feature)
-        X = list()
-        Y = list()
-#        data = {'user':[],'item':[],'rating':[]}
-        Xt = list()
-        Yt = list()
-#        datat = {'user':[],'item':[],'rating':[]}
         if not fsw.featureIdicator[feature]:
             continue
-        for review in trainReviews:
-            reviewFeatures = fsw.getReviewFeaturesExistence(review['features'])
-            if feature in reviewFeatures:
-                existance = 1
-            else:
-                existance = 0
-            
-            busID = review['business_id']
-            userID = review['user_id']
-            
-            bus_features = getFeatures(feature, busID, busImportantFeatures)
-            user_features = getFeatures(feature, userID, userImportantFeatures)
-            
-            if random.random() > 0.8:
-                Xt.append(bus_features + user_features)
-                Yt.append(existance)
-                #print existance, [tfidfB,freqB,pfreqB,tfidfU,freqU,pfreqU]
-                
-#                datat['user'].append(userID)
-#                datat['item'].append(busID)
-#                datat['rating'].append(existance)
-            else:
-                X.append(bus_features + user_features)
-                Y.append(existance)
-                #print existance, [tfidfB,freqB,pfreqB,tfidfU,freqU,pfreqU]
-                
-#                data['user'].append(userID)
-#                data['item'].append(busID)
-#                data['rating'].append(existance)
- 
+        logger.debug('Start working with %s'%feature)
         
-        X = np.array(X)
-        Y = np.array(Y)
-        Xt = np.array(Xt)
-        Yt = np.array(Yt)
-#        train_set = gl.SFrame(data)
-#        test_set = gl.SFrame(datat)
-#        #ADD CROSSS VALIDATION
-#        model = gl.recommender.create(train_set,user_column='user',item_column='item',
-#                                                   target_column='rating',method='matrix_factorization',
-#                                                   n_factors=7,regularization=100,
-#                                                   binary_targets=True,
-#                                                   max_iterations=50,verbose=False)
-#        
-#        y_true_mf = list(test_set['rating'])
-#        y_pred_mf = list(model.score(test_set))
-
-        logmodel = linear_model.LogisticRegression(C=1e5, class_weight='auto').fit(X, Y)
-        Ypred = [x[1] for x in logmodel.predict_proba(Xt)]
-#        print y_pred_mf[:50]
-#        print y_true_mf[:50]
-#        print Ypred[:50]
-#        print Yt[:50]
-        #drawPR(feature,y_true_mf,y_pred_mf,Yt,Ypred,path)
+        #get data
+        X, Y, trainAveragesDict[feature] = getFeatures(logger, feature, trainReviews, busImportantFeatures, userImportantFeatures,
+                                          trainAverages = {}, train = True)
+        
+        #cross validation
+        indicator = range(len(X))
+        random.shuffle(indicator)
+        thres = int(len(indicator)*0.8)
+        trainX = np.array([X[i] for i in indicator[:thres]])
+        trainY = np.array([Y[i] for i in indicator[:thres]])
+        testX = np.array([X[i] for i in indicator[thres:]])
+        testY = np.array([Y[i] for i in indicator[thres:]])
+        
+        #Logistic Regression
+        bestThres,bestF1,logmodel = getBestLogModel(logger, feature, trainX, trainY, testX, testY, X, Y, path)
         
         
-        quality, model = getBestModel(logger, X, Y)
-        y_pred_mf = [x[1] for x in model.predict_proba(Xt)]
-        y_true_mf = Yt
-        logger.info('Score on best model: %.3f'%quality)
-        drawPR(feature,y_true_mf,y_pred_mf,Yt,Ypred,path)
-        modelDict[feature] = [quality, model]
+        modelDict[feature] = [bestThres,bestF1,logmodel]
         
-        
-#        modelDict[feature] = gl.recommender.create(learnData,user_column='user',item_column='item',
-#                                                   target_column='rating',method='matrix_factorization',
-#                                                   n_factors=7,regularization=100,
-#                                                   #binary_targets=True,
-#                                                   max_iterations=50,verbose=False)
-        
-        
-        
-        
-        #crossValidation(logger, X, Y)
-        
-        #quality, model = getBestModel(logger, X, Y)
-            
-        #modelDict[feature] = getBestModel(logger, X, Y)
-        #logger.info('Score on train: %s'%str(modelDict[feature].score(X,Y)))
-#        if i > 15:
-#            break
-        #break
-    return modelDict
+    return trainAveragesDict, modelDict
 
 
 def learnFE(path, limit = 100000000000000):
@@ -255,11 +193,17 @@ def learnFE(path, limit = 100000000000000):
         trainReviews.append(json.loads(line.strip()))
     
     #run function
-    modelDict = learnFeatureExistance(busImportantFeatures, userImportantFeatures, trainReviews, path)
+    trainAveragesDict, modelDict = learnFeatureExistance(busImportantFeatures, userImportantFeatures, trainReviews, path)
     
     #save model
     model_path = path+'/models/'
     pickle.dump(modelDict,open(model_path+'modelDict_%d.model'%counter,'wb'))
+    
+    #save averages
+    output = open(model_path+'trainAverages_%d.model'%counter,'wb')
+    output.write(json.dumps(trainAveragesDict).encode('utf8', 'ignore'))
+    output.close()
+    
 #    model_path = path+'/modelPictures/'
 #    for feature in modelDict:
 #        dot_data = StringIO() 
