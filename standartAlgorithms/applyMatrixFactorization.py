@@ -3,14 +3,14 @@ import logging
 
 
 import numpy as np
-import graphlab as gl
-
+import graphlab
 
 def applyMatrixFactorization(trainReviews, model):
     logger = logging.getLogger('signature.aMF.applyMF')
     logger.info('starting applyMatrixFactorization for %d reviews'%len(trainReviews))
     
-    data = {'user':[],'item':[],'rating':[]}
+    data = {'id':[],'user':[],'item':[],'rating':[]}
+    reviewDict = dict()
     for review in trainReviews:
         busID = review['business_id']
         userID = review['user_id']
@@ -19,49 +19,48 @@ def applyMatrixFactorization(trainReviews, model):
         data['user'].append(userID)
         data['item'].append(busID)
         data['rating'].append(rating)
+        ID = busID+'###'+userID
+        data['id'].append(ID)
+        reviewDict[ID] = review
         
-    testData = gl.SFrame(data)
-        
-    prediction = model.score(testData)
+    testData = graphlab.SFrame(data)
+    testData['prediction'] = model.predict(testData)
     
-    rmse = gl.evaluation.rmse(testData['rating'], prediction)
     
+    for i,ID in enumerate(testData['id']):
+        reviewDict[ID]['MF_prediction'] = testData['prediction'][i]
+    
+    rmse = graphlab.evaluation.rmse(testData['rating'], testData['prediction'])
     logger.info('Score on test: %s'%str(rmse))
     
-    data['prediction'] = list(prediction)
-    return data
+    return [reviewDict[i] for i in reviewDict]
 
 
-def applyMF(path, modelPath):
+def applyMF(path, model_num, limit = np.Inf):
     logger = logging.getLogger('signature.aMF')
     logger.info('starting applyMF')
     #get data
-    r_file = path+'/yelp_reviews_features_test.json'
+    r_file = path+'/yelp_reviews_features_test_pF_sent_agg.json'
     
-    trainReviews = list()
+    testReviews = list()
     for counter, line in enumerate(open(r_file,'r')):
         if not counter%1000:
             logger.debug('%d reviews loaded'%counter)
-#        if counter > 2000:
-#            break
-        trainReviews.append(json.loads(line.strip()))
+        if counter > limit:
+            break
+        testReviews.append(json.loads(line.strip()))
     
     
     #load model
-    model = gl.load_model(modelPath)
+    model_path = path+'/regularModels/matrixFactorization_%d.model'%model_num
+    model = graphlab.load_model(model_path)
     
     #run function
-    pred = applyMatrixFactorization(trainReviews, model)
+    reviewsPrediction = applyMatrixFactorization(testReviews, model)
     
-    #save prediction
-    output = open(path + '/predictions/matrixFactorization.csv', 'w')
-    lines = list()
-    for i in range(len(pred['user'])):
-        #print i
-        line = '%s,%s,%d,%.3f'%(pred['user'][i],pred['item'][i],pred['rating'][i],pred['prediction'][i])
-        lines.append(line)
-        
-    output.write('\n'.join(lines))
-    output.close()
-    
+    #save result
+    outfile = open(path+'/yelp_reviews_features_test_pF_sent_agg_MF.json','w')
+    for review in reviewsPrediction:
+        outfile.write(json.dumps(review).encode('utf8', 'ignore')+'\n')
+    outfile.close()
     

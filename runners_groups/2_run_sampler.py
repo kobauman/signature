@@ -3,12 +3,13 @@ sys.path.append('../')
 import logging
 import time
 
-from preparation.dataCombiner import * 
+from experiment.sampler import sampler
+from params.params import path
 
 if __name__ == '__main__':
     logger = logging.getLogger('signature')
 
-    logfile = '../../data/log/%d_dataCombiner.log'%int(time.time())
+    logfile = '../../data/log/%d_sampler.log'%int(time.time())
     logging.basicConfig(filename = logfile, format='%(asctime)s : %(name)-12s: %(levelname)s : %(message)s')
     logging.root.setLevel(level=logging.DEBUG)
     logger.info("running %s" % ' '.join(sys.argv))
@@ -22,7 +23,6 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    path = '../../data/restaurants/'
+    #path = '../../data/restaurants/'
     #path = '../../data/beautyspa/'
-    review_features = getFeatures(path)
-    preProcessReviews(review_features, path+'/yelp_reviews_features.json', limit = 1000000)
+    sampler(path, [0.4,0.8], 0, 10)

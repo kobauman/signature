@@ -18,17 +18,19 @@ sentenceID = reviewNumber*10000 + sentenceNumber
 import TextBlob
 
 Output: Build a text file with sentences and POS for each category
-Output format: sentenceID word/lemma (if lemma!=word)/POS É
+Output format: sentenceID word/lemma (if lemma!=word)/POS
 '''
 
 
 
 train_data_path = "../../data/splitting_reviews/"
 
-restKeys = ['American (New)','Mexican','American (Traditional)',
-            'Pizza','Italian','Breakfast & Brunch','Sandwiches',
-            'Burgers','Sushi Bars','Chinese','Steakhouses',
-            'Japanese','Mediterranean','Asian Fusion','Thai','Seafood']
+#restKeys = ['American (New)','Mexican','American (Traditional)',
+#            'Pizza','Italian','Breakfast & Brunch','Sandwiches',
+#            'Burgers','Sushi Bars','Chinese','Steakhouses',
+#            'Japanese','Mediterranean','Asian Fusion','Thai','Seafood']
+
+restKeys = ['BeautySpas']
 
 
 def processSentence(sentence):

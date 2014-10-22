@@ -3,7 +3,9 @@ sys.path.append('../')
 import logging
 import time
 
+
 from sentimentPrediction.learnSentimentMF import learnSentimentMF
+from params.params import path
 
 if __name__ == '__main__':
     logger = logging.getLogger('signature')
@@ -22,5 +24,6 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    path = '../../data/restaurants'
-    learnSentimentMF(path,3000)
+    #path = '../../data/restaurants'
+    #path = '../../data/beautyspa'
+    learnSentimentMF(path,20000)

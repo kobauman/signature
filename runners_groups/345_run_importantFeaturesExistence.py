@@ -4,6 +4,9 @@ import logging
 import time
 
 from featureWorkers.importantFeaturesIdentification import importantFeatureIdentification
+from featureWorkers.learnFeaturesExistence import learnFE
+from featureWorkers.applyFeaturesExistence import applyFE
+
 from params.params import path
 
 if __name__ == '__main__':
@@ -23,10 +26,26 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    #path = '../../data/restaurants'
-    #path = '../../data/beautyspa'
-    importantFeatureIdentification(path+'/yelp_reviews_features_stat.json',
-                                   path+'/businessFeaturesAggregation_train.json',
-                                   path+'/userFeaturesAggregation_train.json',
-                                   True,True,1000000000)
     
+    '''
+    3) importantFeaturesIdentification.py
+    '''
+    importantFeatureIdentification(path+'yelp_reviews_features_stat.json',
+                                   path+'businessFeaturesAggregation_train.json',
+                                   path+'userFeaturesAggregation_train.json',
+                                   True,True,1000000000)
+
+    
+    '''
+    4) run_learnFeatureExistence.py
+    '''
+    numberFE = learnFE(path, 10000000000)
+    
+    
+    '''
+    5) run_applyFeatureExistance.py
+    '''
+    modelfile = path + '/models/modelDict_%d.model'%numberFE
+    trainAveragesFile = path+'/models/trainAverages_%d.model'%numberFE
+    
+    applyFE(path, modelfile, trainAveragesFile, 20000000000)

@@ -4,6 +4,7 @@ import logging
 import time
 
 from experiment.sampler import sampler
+from params.params import path
 
 if __name__ == '__main__':
     logger = logging.getLogger('signature')
@@ -22,5 +23,6 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    path = '../../data/restaurants/'
-    sampler(path+'/yelp_reviews_features.json', 0.1)
+    #path = '../../data/restaurants/'
+    #path = '../../data/beautyspa/'
+    sampler(path+'/yelp_reviews_features.json', [0.4,0.8], 4)

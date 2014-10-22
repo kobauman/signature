@@ -4,6 +4,7 @@ import logging
 import time
 
 from featureWorkers.applyFeaturesExistence import applyFE
+from params.params import path
 
 if __name__ == '__main__':
     logger = logging.getLogger('signature')
@@ -22,7 +23,10 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    path = '../../data/restaurants'
-    modelfile = path + '/models/modelDict_102535_all.model'
-    modelfile = path + '/models/modelDict_3001.model'
-    applyFE(path, modelfile)
+    #path = '../../data/restaurants'
+    #path = '../../data/beautyspa'
+    number = 1580
+    modelfile = path + '/models/modelDict_%d.model'%number
+    trainAveragesFile = path+'/models/trainAverages_%d.model'%number
+    
+    applyFE(path, modelfile, trainAveragesFile, 20000000000)

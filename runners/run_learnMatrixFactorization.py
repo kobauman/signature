@@ -22,5 +22,6 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    path = '../../data/restaurants'
-    learnMF(path)
+    #path = '../../data/restaurants/'
+    path = '../../data/beautyspa/'
+    learnMF(path, 20000)

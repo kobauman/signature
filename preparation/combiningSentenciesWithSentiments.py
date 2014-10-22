@@ -3,7 +3,9 @@ import re, glob
 
 #Combine sentencies with sentiments
 
-path  = '../../data/'
+category = 'beautyspa'
+#path = '../../data/'
+path = '../../data/%s'%category
 
 def Filenames(directory):
     if not directory.endswith("/"):
@@ -12,12 +14,12 @@ def Filenames(directory):
     
 files = [x for x in Filenames(path) if 'output_' in x]
 print files
-
+print Filenames(path)
 
 
 
 for filename in files:
-    infile = '_'.join(filename.replace('/output_','/').replace('yelp_','yelp_rest_revies_').split('_')[:-1])+'.txt'
+    infile = '_'.join(filename.replace('/output_','/').replace('yelp_','yelp_%s_revies_'%category).split('_')[:-1])+'.txt'
     print infile
 
     sentence_dict = dict()

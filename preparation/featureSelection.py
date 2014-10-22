@@ -30,7 +30,7 @@ def featureStat(infileName, outfileName, limit = 1000):
             break
         review = json.loads(line)
         #features = fsw.getFeatureAverage(review['features'])
-        features = fsw.getReviewFeatures(review['features'])
+        features = fsw.getReviewFeaturesExistence(review['features'])
         stat[0].append(review['ID'])
         stat[1].append(review['business_id'])
         stat[2].append(review['user_id'])
@@ -72,6 +72,7 @@ def featureStat(infileName, outfileName, limit = 1000):
 
 if __name__ == '__main__':
     #path  = '../../data/'
-    path = '../../data/bing/American_New'
+    #path = '../../data/bing/American_New'
     path = '../../data/restaurants'
-    featureStat(path+'/yelp_reviews_features.json', path+'/feature_stat.txt', limit = 1000000)
+    #featureStat(path+'/yelp_reviews_features.json', path+'/feature_stat.txt', limit = 1000000)
+    featureStat(path+'/yelp_reviews_features_train.json', path+'/feature_stat_train.txt', limit = 1000000)

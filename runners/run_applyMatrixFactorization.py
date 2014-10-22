@@ -22,6 +22,6 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    path = '../../data/restaurants'
-    model_path = path+'/regularModels/'+'matrixFactorization_102535.model'
-    applyMF(path, model_path)
+    #path = '../../data/restaurants/'
+    path = '../../data/beautyspa/'
+    applyMF(path, 4255)

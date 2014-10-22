@@ -56,7 +56,6 @@ def getFeatures(path):
         feature_file = open(filename,'r')
         for counter, line in enumerate(feature_file):
             l = line.strip().split('|')
-            
             if l[1].strip() == 'F':
                 sentenceID = int(l[0].replace(')',''))
                 featureID = l[4].strip()
@@ -73,6 +72,7 @@ def getFeatures(path):
             features[reviewID][sentenceNum] = features[reviewID].get(sentenceNum, {})
             features[reviewID][sentenceNum][featureID] = sentiment
         feature_file.close()
+    #print features.keys()
     return features  
 
 def preProcessReviews(review_features, outfilename, limit = 100):
@@ -97,8 +97,10 @@ def preProcessReviews(review_features, outfilename, limit = 100):
             del review['text']
             review['textFeatures'] = textFeatures
             out_file.write(json.dumps(review).encode('utf8', 'ignore')+'\n')
-        if not counter %10000:
+        if not counter %10:
             logger.info('%d reviews processed'%counter)
+#        if counter > 100:
+#            break
             
     review_file.close()
     out_file.close()

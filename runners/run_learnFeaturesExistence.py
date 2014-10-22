@@ -4,6 +4,7 @@ import logging
 import time
 
 from featureWorkers.learnFeaturesExistence import learnFE
+from params.params import path
 
 if __name__ == '__main__':
     logger = logging.getLogger('signature')
@@ -22,5 +23,6 @@ if __name__ == '__main__':
     logger.addHandler(console)
     
 
-    path = '../../data/restaurants'
-    learnFE(path, 1000000)
+    #path = '../../data/restaurants'
+    #path = '../../data/beautyspa'
+    learnFE(path, 10000000000)

@@ -7,16 +7,24 @@ sexPredictor.py
 from nltk import NaiveBayesClassifier,classify
 import USSSALoader
 import random
+import pickle
 
 
-def nsyl(word):
-    lowercase = word.lower()
-    if lowercase not in d:
-        return -1
-    else:
-        return max([len([y for y in x if isdigit(y[-1])]) for x in d[lowercase]])
+work_path = '../../data/genderPrediction/'
+
+#def nsyl(word):
+#    lowercase = word.lower()
+#    if lowercase not in d:
+#        return -1
+#    else:
+#        return max([len([y for y in x if isdigit(y[-1])]) for x in d[lowercase]])
 
 class genderPredictor():
+    def save(self):
+        pickle.dump(self.classifier,open(work_path+'sexModel.model','wb'))
+        
+    def load(self):
+        self.classifier = pickle.load(open(work_path+'sexModel.model','r'))
     
     def getFeatures(self):
         maleNames,femaleNames=self._loadNames()
@@ -44,19 +52,22 @@ class genderPredictor():
         test_set  = featureset[cut_point:]
         
         self.train(train_set)
-        
+        self.save()
         return self.test(test_set)
         
     def classify(self,name):
         feats=self._nameFeatures(name)
-        return self.classifier.classify(feats)
+        if self.classifier.classify(feats) == 'M':
+            return 1
+        else:
+            return 0
         
     def train(self,train_set):
         self.classifier = NaiveBayesClassifier.train(train_set)
         return self.classifier
         
     def test(self,test_set):
-       return classify.accuracy(self.classifier,test_set)
+        return classify.accuracy(self.classifier,test_set)
         
     def getMostInformativeFeatures(self,n=5):
         return self.classifier.most_informative_features(n)
@@ -87,8 +98,8 @@ if __name__ == "__main__":
     for feat in feats:
         print '\t%s = %s'%feat
     
-    print '\nStephen is classified as %s'%gp.classify('Stephen')
-    print '\nMike is classified as %s'%gp.classify('Mike')
+    print '\nStephen is classified as %d'%gp.classify('Stephen')
+    print '\nMike is classified as %d'%gp.classify('Mike')
     names = ['Joe','Mike','Meghan','Teehee','Bill','Susana','Eric','Whitney','Beth and  James']
     for name in names:
-        print '%s is classified as %s'%(name,gp.classify(name))
+        print '%s is classified as %d'%(name,gp.classify(name))

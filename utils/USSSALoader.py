@@ -10,10 +10,12 @@ from zipfile import ZipFile
 import csv
 import pickle
         
+work_path = '../../data/genderPrediction/'
+
 def getNameList():
-    if not os.path.exists('names.pickle'):
+    if not os.path.exists(work_path+'names.pickle'):
         print 'names.pickle does not exist, generating'
-        if not os.path.exists('names.zip'):
+        if not os.path.exists(work_path+'names.zip'):
             print 'names.zip does not exist, downloading from github'
             downloadNames()
         else:
@@ -37,13 +39,13 @@ def getNameList():
         names=(maleNames,femaleNames)
         
         print 'Saving names.pickle'
-        fw=open('names.pickle','wb')
+        fw=open(work_path+'names.pickle','wb')
         pickle.dump(names,fw,-1)
         fw.close()
         print 'Saved names.pickle'
     else:
         print 'names.pickle exists, loading data'
-        f=open('names.pickle','rb')
+        f=open(work_path+'names.pickle','rb')
         names=pickle.load(f)
         print 'names.pickle loaded'
         
@@ -58,7 +60,7 @@ def downloadNames():
     localFile.close()
     
 def extractNamesDict():
-    zf=ZipFile('names.zip', 'r')
+    zf=ZipFile(work_path+'names.zip', 'r')
     filenames=zf.namelist()
     
     names=dict()
