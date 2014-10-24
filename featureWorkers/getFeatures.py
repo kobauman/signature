@@ -28,16 +28,20 @@ def getBasicFeatures(feature, ID, dictionary, train):
     if ID in dictionary:
         tfidf = dictionary[ID]['tfidfDict'].get(feature,0.0)
         freq = int(dictionary[ID]['featureFreq'].get(feature,0.0)*dictionary[ID]['reviewsNumber']/100)
+        logfreq = np.log(1 + freq)
         pfreq = dictionary[ID]['featureFreq'].get(feature,0.0)
         sent = dictionary[ID]['sentiment'].get(feature,[0.0,0])[0]
         reviewNum = dictionary[ID]['reviewsNumber']
+        logreviewNum = np.log(1 + reviewNum)
         maxFreq = dictionary[ID]['maxFreq']
         featureNum = len(dictionary[ID]['tfidfDict'])
+        importantFeatureNum = len([f for f in dictionary[ID]['featureFreq'] if dictionary[ID]['featureFreq'][f] > 10 and
+                                   dictionary[ID]['sentiment'][f][1] > 1])
         textFeatures = dictionary[ID]['textFeatures']
-        result = [tfidf,freq,pfreq,sent,reviewNum,maxFreq,featureNum] + textFeatures
+        result = [tfidf,logfreq,pfreq,sent,reviewNum,logreviewNum ,maxFreq,featureNum,importantFeatureNum] + textFeatures
     else:
         #print ID
-        result = [None,None,None,None,None,None,None] + [None,None,None,None,None]
+        result = [None,None,None,None,None,None,None,None,None] + [None,None,None,None,None]
     
 #    if not train or (result[4] and result[4] > 10):
 #        return result
@@ -95,7 +99,7 @@ def getFeatures(logger, feature, reviewsSet, busImportantFeatures, userImportant
             
         bus_basic_features = getBasicFeatures(feature, busID, busImportantFeatures, is_train)
         user_basic_features = getBasicFeatures(feature, userID, userImportantFeatures, is_train)
-        bus_additional_features = []#getBusinessFeatures(busID, business_dict, cW)
+        bus_additional_features = getBusinessFeatures(busID, business_dict, cW)
         user_additional_features = getUserFeatures(userID, user_dict, gP)
         
 #        if not bus_basic_features or not user_basic_features:

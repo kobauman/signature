@@ -242,7 +242,7 @@ class featureStructureWorker:
 #        self.featureIdicator['STAFF_INSTRUCTOR'] = False
 #        self.featureIdicator['STAFF_OWNER'] = False
 #        
-#        self.featureIdicator['FOOD'] = True
+#        self.featureIdicator['FOOD'] = False
 #        self.featureIdicator['FOOD_FOOD'] = False
 #        self.featureIdicator['FOOD_DRINK'] = False
 #        
@@ -252,9 +252,9 @@ class featureStructureWorker:
 #        self.featureIdicator['PROCEDURE_RELAX_SPA'] = True
 #        self.featureIdicator['PROCEDURE_RELAX_TRAIN'] = False
 #        self.featureIdicator['PROCEDURE_BEAUTY'] = True
-#        self.featureIdicator['PROCEDURE_BEAUTY_HAIR'] = True
+#        self.featureIdicator['PROCEDURE_BEAUTY_HAIR'] = False
 #        self.featureIdicator['PROCEDURE_BEAUTY_FACE'] = False
-#        self.featureIdicator['PROCEDURE_BEAUTY_BARBER'] = True
+#        self.featureIdicator['PROCEDURE_BEAUTY_BARBER'] = False
 #        self.featureIdicator['PROCEDURE_BEAUTY_NAILS'] = True
 #        self.featureIdicator['PROCEDURE_BEAUTY_NAILS_MANI'] = False
 #        self.featureIdicator['PROCEDURE_BEAUTY_NAILS_PEDI'] = False
@@ -303,8 +303,8 @@ class featureStructureWorker:
                         continue
                     result[f] = result.get(f,[])
                 
-                    if sentiment:
-                        result[f].append(sentiment)  
+                    #if sentiment:
+                    result[f].append(sentiment)  
         return result
     
     def getReviewFeaturesSentiment(self, review_features):

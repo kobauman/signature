@@ -258,6 +258,7 @@ def learnFeatureExistance(busImportantFeatures, userImportantFeatures, trainRevi
     modelDict = dict()
     trainAveragesDict = dict()
     
+    
     for f, feature in enumerate(fsw.featureIdicator):
         if not fsw.featureIdicator[feature]:
             continue
@@ -297,8 +298,8 @@ def learnFE(path, limit = np.Inf):
     logger = logging.getLogger('signature.lFE')
     logger.info('starting learnFE')
     #get data
-    b_file = path+'/businessFeaturesAggregation_train.json'
-    u_file = path+'/userFeaturesAggregation_train.json'
+    b_file = path+'/businessFeaturesAggregation_stat.json'
+    u_file = path+'/userFeaturesAggregation_stat.json'
     r_file = path+'/yelp_reviews_features_extrain.json'
     
     busImportantFeatures = json.loads(open(b_file,'r').readline())

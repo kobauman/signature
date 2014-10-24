@@ -37,7 +37,11 @@ def featureImportance(review_dict, ignore_neutral = True):
                 itemFeatures[item]['sentiment'][feature] = itemFeatures[item]['sentiment'].get(feature,[])
                 if len(reviewFeatures[feature]):
                     if ignore_neutral:
-                        itemFeatures[item]['sentiment'][feature].append(np.average([x for x in reviewFeatures[feature] if x]))
+                        arr = [x for x in reviewFeatures[feature] if x]
+                        if len(arr):
+                            itemFeatures[item]['sentiment'][feature].append(np.average(arr))
+                        else:
+                            itemFeatures[item]['sentiment'][feature].append(0.0)
                     else:
                         itemFeatures[item]['sentiment'][feature].append(np.average(reviewFeatures[feature]))
                 else:

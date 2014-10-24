@@ -25,4 +25,4 @@ if __name__ == '__main__':
 
     #path = '../../data/restaurants/'
     #path = '../../data/beautyspa/'
-    sampler(path, [0.4,0.8], 0, 10)
+    sampler(path, [0.4,0.8], 10, 10)

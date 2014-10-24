@@ -80,7 +80,7 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
     review_file.close()
     
     logger.info('Important feature identification for %d BUSINESSES'%len(bus_reviews))
-    busImportantFeatures = featureImportance(bus_reviews)
+    busImportantFeatures = featureImportance(bus_reviews, False)
     for bus in busImportantFeatures:
         if bus in business_dict:
             busImportantFeatures[bus]['categories'] = business_dict[bus]['categories']
@@ -124,7 +124,7 @@ def importantFeatureIdentification(infileName, outBusinesFile, outUserFile, busI
     
     
     logger.info('Important feature identification for %d USERS'%len(user_reviews))
-    userImportantFeatures = featureImportance(user_reviews)
+    userImportantFeatures = featureImportance(user_reviews, False)
     for user in userImportantFeatures:
         if user in user_dict:
             userImportantFeatures[user]['name'] = user_dict[user]['name']

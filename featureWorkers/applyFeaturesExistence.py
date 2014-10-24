@@ -55,7 +55,7 @@ def drawPR(feature,y_true,y_pred,y_bus,thres, path):
         os.mkdir(path+'/testPictures/')
     plt.savefig(path+'/testPictures/%s.png'%feature)
         
-    return F1
+    return '%.3f\t%.3f\t%.3f'%(precThres[0],recThres[0],F1)
 
 
 
@@ -115,6 +115,23 @@ def applyFeatureExistance(busImportantFeatures, userImportantFeatures, testRevie
     Jaccard_weighted = list()
     Jaccard_baseline = list()
     Jaccard_baseline_weighted = list()
+    TP = 0
+    FP = 0
+    FN = 0
+    
+    TP_all = 0
+    FP_all = 0
+    FN_all = 0
+    
+    TP_bus = 0
+    FP_bus = 0
+    FN_bus = 0
+    
+    TP_int = 0
+    FP_int = 0
+    FN_int = 0
+    
+    
     for r, review in enumerate(testReviews):
         Jaccard_intersection = 0.0
         Jaccard_union = 0.0
@@ -128,7 +145,55 @@ def applyFeatureExistance(busImportantFeatures, userImportantFeatures, testRevie
         Jaccard_intersection_baseline_weighted = 0.0
         Jaccard_union_baseline_weighted = 0.0
         
+        busID = review['business_id']
+        if busID in busImportantFeatures:
+            busAspects = set([f for f in busImportantFeatures[busID]['featureFreq'] if busImportantFeatures[busID]['featureFreq'][f] > 10 and
+                                       busImportantFeatures[busID]['sentiment'][f][1] > 1])
+        else:
+            busAspects = set([f for f in fsw.featureIdicator if fsw.featureIdicator[feature]])
+            
+            
+        userID = review['user_id']
+        if userID in userImportantFeatures:
+            userAspects = set([f for f in userImportantFeatures[userID]['featureFreq'] if userImportantFeatures[userID]['featureFreq'][f] > 10 and
+                                       userImportantFeatures[userID]['sentiment'][f][1] > 1])
+        else:
+            userAspects = set([f for f in fsw.featureIdicator if fsw.featureIdicator[feature]])
+        
+            
+        interBU = userAspects.intersection(busAspects)
+        
         for feature in review['exPredFeatures']:
+            if review['exPredFeatures'][feature] == [1,1]:
+                TP += 1
+            elif review['exPredFeatures'][feature] == [0,1]:
+                FP += 1
+            if review['exPredFeatures'][feature] == [1,0]:
+                FN += 1
+            
+            #baseline all
+            if review['exPredFeatures'][feature][0] == 1:
+                TP_all += 1
+           
+            #baseline business
+            if feature in busAspects and review['exPredFeatures'][feature][0] == 1:
+                TP_bus += 1
+            elif feature in busAspects and review['exPredFeatures'][feature][0] == 0:
+                FP_bus += 1
+            elif feature not in busAspects and review['exPredFeatures'][feature][0] == 1:
+                FN_bus += 1
+            
+            
+            #baseline intersection
+            if feature in interBU and review['exPredFeatures'][feature][0] == 1:
+                TP_int += 1
+            elif feature in interBU and review['exPredFeatures'][feature][0] == 0:
+                FP_int += 1
+            elif feature not in interBU and review['exPredFeatures'][feature][0] == 1:
+                FN_int += 1
+            #print TP_int, FP_int, FN_int
+            
+            
             if review['exPredFeatures'][feature] == [1,1]:
                 Jaccard_intersection += 1.0
                 Jaccard_intersection_weighted += featureWeights[feature]
@@ -141,8 +206,11 @@ def applyFeatureExistance(busImportantFeatures, userImportantFeatures, testRevie
         
         for feature in fsw.featureIdicator:
             if fsw.featureIdicator[feature]:
+                FP_all += 1
+                
                 Jaccard_union_baseline += 1
                 Jaccard_union_baseline_weighted += featureWeights[feature]
+                
         
         if Jaccard_union:
             Jaccard.append(Jaccard_intersection/Jaccard_union)       
@@ -152,19 +220,45 @@ def applyFeatureExistance(busImportantFeatures, userImportantFeatures, testRevie
             Jaccard_baseline.append(Jaccard_intersection_baseline/Jaccard_union_baseline)
         if Jaccard_union_baseline_weighted:
             Jaccard_baseline_weighted.append(Jaccard_intersection_baseline_weighted/Jaccard_union_baseline_weighted)
-        
+    
+    #SIGNATURE METHOD    
+    Presision = float(TP)/(TP+FP)
+    Recall = float(TP)/(TP+FN)
+    F1 = 2*Presision*Recall/(Presision+Recall)
+    PreRec = [Presision,Recall,F1]
+    
+    #baseline ALL
+    Presision_all = float(TP_all)/(TP_all+FP_all)
+    Recall_all = float(TP_all)/(TP_all+FN_all)
+    F1_all = 2*Presision_all*Recall_all/(Presision_all+Recall_all)
+    PreRec_all = [Presision_all,Recall_all,F1_all]
+    
+    #baseline BUSINESS
+    Presision_bus = float(TP_bus)/(TP_bus+FP_bus)
+    Recall_bus = float(TP_bus)/(TP_bus+FN_bus)
+    F1_bus = 2*Presision_bus*Recall_bus/(Presision_bus+Recall_bus)
+    PreRec_bus = [Presision_bus,Recall_bus,F1_bus]
+    
+    #print TP_int, FP_int
+    #baseline INTERSECTION
+    Presision_int = float(TP_int)/(TP_int+FP_int)
+    Recall_int = float(TP_int)/(TP_int+FN_int)
+    F1_int = 2*Presision_int*Recall_int/(Presision_int+Recall_int)
+    PreRec_int = [Presision_int,Recall_int,F1_int]
     
     
-    return testReviews, featureWeights, [np.average(Jaccard), np.average(Jaccard_weighted),
-                         np.average(Jaccard_baseline), np.average(Jaccard_baseline_weighted)], featureF1
+    return testReviews, featureWeights, [[np.average(Jaccard), np.average(Jaccard_weighted)],
+                         [np.average(Jaccard_baseline), 
+                          np.average(Jaccard_baseline_weighted)]], featureF1, [PreRec,PreRec_all,
+                                                                               PreRec_bus, PreRec_int]
 
 
 def applyFE(path, modelfile, trainAveragesFile, limit = np.Inf):
     logger = logging.getLogger('signature.aFE')
     logger.info('starting applyFE')
     #get data
-    b_file = path+'/businessFeaturesAggregation_train.json'
-    u_file = path+'/userFeaturesAggregation_train.json'
+    b_file = path+'/businessFeaturesAggregation_stat.json'
+    u_file = path+'/userFeaturesAggregation_stat.json'
     r_file = path+'/yelp_reviews_features_test.json'
     
     busImportantFeatures = json.loads(open(b_file,'r').readline())
@@ -190,7 +284,7 @@ def applyFE(path, modelfile, trainAveragesFile, limit = np.Inf):
     infile.close()
     
     #run function
-    reviewsPrediction, featureWeights, Jaccard, featureF1 = applyFeatureExistance(busImportantFeatures, userImportantFeatures,
+    reviewsPrediction, featureWeights, Jaccard, featureF1, PreRec = applyFeatureExistance(busImportantFeatures, userImportantFeatures,
                                                                        testReviews, modelDict, trainAveragesDict,
                                                                        path)
     
@@ -211,10 +305,27 @@ def applyFE(path, modelfile, trainAveragesFile, limit = np.Inf):
     except:
         os.mkdir(path+'/results/')
     outfile = open(path+'/results/Jaccard_feature_existence.txt','w')
-    outfile.write('Jaccard = %f\nJaccard_weighted = %f'%(Jaccard[0], Jaccard[1]))
-    outfile.write('\n\nJaccard_baseline = %f\nJaccard_baseline_weighted = %f'%(Jaccard[2], Jaccard[3]))
+    outfile.write('Jaccard = %f\nJaccard_weighted = %f'%(Jaccard[0][0], Jaccard[0][1]))
+    outfile.write('\n\nPrecision = %f\nRecall = %f\nF1 = %f'%(PreRec[0][0], PreRec[0][1], PreRec[0][2]))
+    
+    outfile.write('\n\n===========================\nBASELINE ALL\n')
+    outfile.write('Jaccard = %f\nJaccard_weighted = %f'%(Jaccard[1][0], Jaccard[1][1]))
+    outfile.write('\n\nPrecision = %f\nRecall = %f\nF1 = %f'%(PreRec[1][0], PreRec[1][1], PreRec[1][2]))
+    
+    outfile.write('\n\n===========================\nBASELINE BUSINESS\n')
+    #outfile.write('Jaccard = %f\nJaccard_weighted = %f'%(Jaccard[1][0], Jaccard[1][1]))
+    outfile.write('\n\nPrecision = %f\nRecall = %f\nF1 = %f'%(PreRec[2][0], PreRec[2][1], PreRec[2][2]))
+    
+    outfile.write('\n\n===========================\nBASELINE INTERSECTION\n')
+    #outfile.write('Jaccard = %f\nJaccard_weighted = %f'%(Jaccard[1][0], Jaccard[1][1]))
+    outfile.write('\n\nPrecision = %f\nRecall = %f\nF1 = %f'%(PreRec[3][0], PreRec[3][1], PreRec[3][2]))
+    
     outfile.close()
     
+    
+    
+    
     outfile = open(path+'/results/FeatureExistenceF1.txt','w')
-    outfile.write('\n'.join(['%s: \t%.3f'%(feature,featureF1[feature]) for feature in featureF1]))
+    outfile.write('Feature name\t Precision\tRecall\tF1\n')
+    outfile.write('\n'.join(['%s: \t%s'%(feature,featureF1[feature]) for feature in featureF1]))
     outfile.close()

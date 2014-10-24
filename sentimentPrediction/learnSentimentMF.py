@@ -11,39 +11,47 @@ from utils.precision import precision_recall_curve
 
 
 
-    
-
-
-
 def getBestMFThres(logger, feature, learnData, path):
-#    threses = list()
-#    qualities = list()
-#    for counter in range(3):
-#        train, test = learnData.random_split(0.8)
-#        
-#        MFmodel = graphlab.recommender.factorization_recommender.create(train,user_id='user',item_id='item',
-#                                                                  target='rating',num_factors=10,
-#                                                                  #regularization=100,#binary_target=True,
-#                                                                  max_iterations=50,verbose=False)
-#        
-##        MFmodel = graphlab.recommender.item_similarity_recommender.create(train,user_id='user',item_id='item',
-##                                                                          target='rating', similarity_type='jaccard',
-##                                                                          training_method='auto', threshold=0.001, 
-##                                                                          only_top_k=100, random_seed=0, verbose=True)
-#        test_predictions = MFmodel.predict(test)
+    bestWin = 0.0
+    bestReg = 100
+    for reg in [0.1, 0.5, 0.75, 1.0, 10, 0.1, 0.5, 0.75, 1.0, 10]:
+        train, test = learnData.random_split(0.8)
+        
+        
+        
+        MFmodel = graphlab.recommender.factorization_recommender.create(train,user_id='user',item_id='item',
+                                                                  target='rating',num_factors=50,
+                                                                  regularization=reg,#binary_target=True,
+                                                                  max_iterations=100,verbose=False)
+        
+
+#        print 'Regularization = %f'%reg
+        test_predictions = MFmodel.predict(test)
 #        print 'train average', np.average(train['rating'])
 #        print 'test average', np.average(test['rating'])
-#        print test_predictions#[:5]
-#        print test['rating']#[:5]
-##        print graphlab.evaluation.accuracy(test['rating'], test_predictions)
-#        
+#        print 'RMSE average(TEST) = ', graphlab.evaluation.rmse(graphlab.SArray(test['rating']), graphlab.SArray([np.average(test['rating'])]*len(test['rating'])))
+        rmse_avg = graphlab.evaluation.rmse(graphlab.SArray(test['rating']), graphlab.SArray([np.average(train['rating'])]*len(test['rating'])))
+        #print 'RMSE average = ', rmse_avg
+        rmse_predict = graphlab.evaluation.rmse(graphlab.SArray(test['rating']), test_predictions)
+        #print 'RMSE predict = ', rmse_predict
+        win = (rmse_avg - rmse_predict)/rmse_avg
+        print 'RMSE average - predict = ',win
+        if win > bestWin:
+            bestWin = win
+            bestReg = reg
+        #print test_predictions#[:5]
+        #print test['rating']#[:5]
+#        print graphlab.evaluation.accuracy(test['rating'], test_predictions)
+        
 #        avg = 0
 #        predictions = list()
 #        for i in range(len(test)):
 #            pred = -1 if test_predictions[i] < avg else 1
 #            predictions.append(pred)
+#        print '0000000'
+#        print graphlab.evaluation.rmse(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
 #        print graphlab.evaluation.accuracy(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
-#        print graphlab.evaluation.confusion_matrix(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
+#        #print graphlab.evaluation.confusion_matrix(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
 #        
 #        
 #        
@@ -53,9 +61,11 @@ def getBestMFThres(logger, feature, learnData, path):
 #        for i in range(len(test)):
 #            pred = -1 if test_predictions[i] < avg else 1
 #            predictions.append(pred)
+#        print 'AVERAGE'
+#        print graphlab.evaluation.rmse(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
 #        print graphlab.evaluation.accuracy(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
-#        print graphlab.evaluation.confusion_matrix(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
-##        exit()
+        #print graphlab.evaluation.confusion_matrix(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
+
 ##        print test['rating'], test_predictions
 #        prec, rec, thresholds = precision_recall_curve(-np.array(test['rating']), -np.array(test_predictions))
 ##        prec_minus, rec_minus, thresholds_minus = precision_recall_curve(-np.array(test['rating']), -np.array(test_predictions))
@@ -96,9 +106,21 @@ def getBestMFThres(logger, feature, learnData, path):
 #        print graphlab.evaluation.confusion_matrix(graphlab.SArray(test['rating']), graphlab.SArray(predictions))
     
     
+       
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    print 'Best WIN = ',bestWin,'With reg = ',bestReg
+    
     MFmodel = graphlab.recommender.factorization_recommender.create(learnData,user_id='user',item_id='item',
                                                                              target='rating',num_factors=10,
-                                                                             #regularization=100,#binary_targets=True,
+                                                                             regularization=bestReg,#binary_targets=True,
                                                                              max_iterations=50,verbose=False)
     
     
@@ -117,12 +139,12 @@ def learnSentimentMatrixFactorization(trainReviews, path):
     modelDict = dict()
     featureThres = dict()
     for i, feature in enumerate(fsw.featureIdicator):
-#        if feature.count('_')>1:
+#        if feature != 'STAFF':
 #            continue
-        logger.debug('Start working with %s'%feature)
-        
         if not fsw.featureIdicator[feature]:
             continue
+        
+        logger.debug('Start working with %s'%feature)
         
         learnData = {'user':[],'item':[],'rating':[]}
         
@@ -140,6 +162,7 @@ def learnSentimentMatrixFactorization(trainReviews, path):
             learnData['user'].append(userID)
             learnData['item'].append(busID)
             learnData['rating'].append(rating)
+            
             
             
         #CROSSS VALIDATION
@@ -178,3 +201,7 @@ def learnSentimentMF(path, limit = 1000000000):
         output = open(model_path+'%s_sentiment.threshold'%feature,'w')
         output.write(str(featureThres[feature]))
         output.close()
+    
+    output = open(path+'trainSentimentAverages.json','wb')
+    output.write(json.dumps(featureThres).encode('utf8', 'ignore'))
+    output.close()

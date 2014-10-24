@@ -23,19 +23,20 @@ def learnMatrixFactorization(trainReviews):
     learnData = graphlab.SFrame(data)
     
     
-#    MFmodel = graphlab.recommender.factorization_recommender.create(learnData,user_id='user',item_id='item',
-#                                                                    target='rating',num_factors=10,
-#                                                                    #regularization=100,#binary_targets=True,
-#                                                                    max_iterations=50,verbose=False)
+    MFmodel = graphlab.recommender.factorization_recommender.create(learnData,user_id='user',item_id='item',
+                                                                    target='rating',num_factors=50,
+                                                                    regularization=0.05,#binary_targets=True,
+                                                                    max_iterations=50,verbose=False)
     
-    MFmodel = graphlab.recommender.create(learnData,user_id='user',item_id='item',
-                                           target='rating',#n_factors=10,
-                                           #regularization=100,#binary_targets=True,
-                                           #max_iterations=50,verbose=False,
-                                           method = 'matrix_factorization')
+#    MFmodel = graphlab.recommender.create(learnData,user_id='user',item_id='item',
+#                                           target='rating',#n_factors=10,
+#                                           #regularization=100,#binary_targets=True,
+#                                           #max_iterations=50,verbose=False,
+#                                           method = 'matrix_factorization')
      
        
     #logger.info('Score on train: %s'%str(model.summary()['training_rmse']))
+    MFmodel.summary()
     
     return MFmodel
 
@@ -43,11 +44,11 @@ def learnMF(path, limit = np.Inf):
     logger = logging.getLogger('signature.MF')
     logger.info('starting learnMF')
     #get data
-    r_file = path+'/yelp_reviews_features_train.json'
+    r_file = path+'yelp_reviews_features_train.json'
     
     trainReviews = list()
     for counter, line in enumerate(open(r_file,'r')):
-        if not counter%1000:
+        if not counter%5000:
             logger.debug('%d reviews loaded'%counter)
         if counter > limit:
             break
@@ -57,7 +58,7 @@ def learnMF(path, limit = np.Inf):
     model = learnMatrixFactorization(trainReviews)
     
     #save model
-    model_path = path+'/regularModels/'
+    model_path = path+'regularModels/'
     try:
         os.stat(model_path)
     except:

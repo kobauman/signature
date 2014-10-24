@@ -102,6 +102,7 @@ def sampler(path, probs = [0.4, 0.8], busThres = 0, userThres = 0):
         os.mkdir(path+'results/')
     
     outfile = open(path+'results/Numbers_stat.txt','w')
+    outfile.write('Businesses only with > %d reviews\nUsers only with > %d reviews'%(busThres,userThres))
     outfile.write('Train: %d,\n Stat: %d,\nExtrain: %d,\nTest: %d'%(counters[0],counters[1],counters[2],counters[3]))
     outfile.close()
 
